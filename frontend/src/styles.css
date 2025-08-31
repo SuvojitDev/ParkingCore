@@ -1,0 +1,21 @@
+@import 'ngx-toastr/toastr';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* small app defaults */
+body { 
+  @apply bg-gray-50 text-gray-800 antialiased;
+  scroll-behavior: smooth;       /* ✅ smooth scroll */
+  transition: background 0.3s ease, color 0.3s ease; /* ✅ smooth theme/color transitions */
+}
+
+/* Optional: anchor link scrolling fix */
+html {
+  scroll-behavior: smooth; /* ensures smooth scroll across the whole app */
+}
+
+.required-field::after {
+  content: " *";
+  color: red;
+}

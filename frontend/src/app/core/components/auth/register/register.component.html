@@ -1,0 +1,36 @@
+<div class="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 px-4">
+    <div class="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8">
+        <!-- Title -->
+        <h2 class="text-3xl font-bold text-center text-gray-900 dark:text-white mb-6">
+            Register to ParkingSys
+        </h2>
+        <form [formGroup]="registerForm" class="space-y-4">
+            <!-- Name -->
+            <div>
+                <label
+                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 required-field">Name</label>
+                <input type="text" formControlName="name" placeholder="System Owner"
+                    class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white dark:border-gray-600" />
+                <p *ngIf="registerForm.get('name')?.invalid && registerForm.get('name')?.touched" class="text-red-500 text-sm mt-1">Name is required</p>
+            </div>
+            <!-- Email -->
+            <div>
+                <label
+                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 required-field">Email</label>
+                <input type="email" formControlName="email" placeholder="admin@example.com"
+                    class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white dark:border-gray-600" />
+                <p *ngIf="registerForm.get('email')?.invalid && registerForm.get('email')?.touched" class="text-red-500 text-sm mt-1">Valid email is required</p>
+            </div>
+            <!-- Password -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 required-field">Password</label>
+                <input type="password" formControlName="password" placeholder="••••••••" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white dark:border-gray-600" />
+                <p *ngIf="registerForm.get('password')?.invalid && registerForm.get('password')?.touched" class="text-red-500 text-sm mt-1">Password is required</p>
+            </div>
+            <!-- Submit Button -->
+            <button type="submit" class="w-full py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition disabled:opacity-50" [disabled]="registerForm.invalid" (click)="submitRegisterForm()">
+                Register
+            </button>
+        </form>
+    </div>
+</div>
