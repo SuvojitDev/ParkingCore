@@ -46,11 +46,7 @@ logs
 *.sublime-workspace
 
 # Visual Studio Code
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
+.vscode/
 
 # Local history / VSCode extensions
 .history/*
@@ -73,3 +69,14 @@ Thumbs.db
 ehthumbs.db
 Desktop.ini
 $RECYCLE.BIN/
+
+# =========================================
+# Deployment / Hosting
+# =========================================
+.vercel/
+.netlify/
+
+# =========================================
+# File Uploads (Backend)
+# =========================================
+/uploads
