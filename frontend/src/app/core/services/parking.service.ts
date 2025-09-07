@@ -18,7 +18,7 @@ export class ParkingService {
   constructor(private http: HttpClient) { }
 
   createParking(data: any): Observable<any> {
-    return this.http.post(this.apiUrl, data);
+    return this.http.post(`${this.apiUrl}/parking`, data);
   }
 
   getParkingSlots(): Observable<ParkingSlot[]> {
@@ -31,5 +31,13 @@ export class ParkingService {
 
   deleteParking(id: string): Observable<any> {
     return this.http.delete(`${this.apiUrl}/parking/${id}`);
+  }
+
+  searchParking(query: string): Observable<any> {
+    return this.http.get(`${this.apiUrl}/parking/search`, { params: { q: query } });
+  }
+
+  getParkingSlotsDetails(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/parking/slots`);
   }
 }

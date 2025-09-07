@@ -51,8 +51,6 @@ exports.updateUser = async (req, res) => {
   }
 };
 
-
-
 // 🔹 Update User Role (Admin only)
 exports.updateUserRole = async (req, res) => {
   const { id } = req.params;
@@ -68,4 +66,13 @@ exports.deleteUser = async (req, res) => {
   const del = await User.findByIdAndDelete(id);
   if (!del) return res.status(404).json({ message: "User not found" });
   res.json({ message: "Deleted" });
+};
+
+exports.listManagers = async (req, res) => {
+  try {
+    const managers = await User.find({ role: 'Manager' }).select('_id name');
+    res.status(200).json(managers);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 };

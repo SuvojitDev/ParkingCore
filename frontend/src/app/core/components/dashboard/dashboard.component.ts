@@ -6,6 +6,17 @@ import { finalize, forkJoin } from 'rxjs';
 import { ParkingService } from '../../services/parking.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { BookingService } from '../../services/booking.service';
+import * as moment from 'moment';
+import { ToastrService } from 'ngx-toastr';
+import { PaymentService } from '../../services/payment.service';
+
+interface PaymentRequest {
+  bookingId: string;
+  cardNumber: string;
+  expiry: string;
+  cvv: string;
+  nameOnCard: string;
+}
 
 @Component({
   selector: 'app-dashboard',
@@ -39,6 +50,25 @@ export class DashboardComponent implements OnInit {
   isBookingCreateModalOpen: boolean = false;
   isBookingUpdateModalOpen: boolean = false;
   bookings: any[] = [];
+  searchQuery: string = '';
+  isResetPasswordModalOpen: boolean = false;
+  resetPasswordForm!: FormGroup;
+  isChangePasswordModalOpen: boolean = false;
+  changePasswordForm!: FormGroup;
+  managers: any[] = [];
+  parkingSlots: any[] = [];
+  vehicleTypes = [
+    { value: 'Car', label: 'Car' },
+    { value: 'Bike', label: 'Bike' },
+    { value: 'Truck', label: 'Truck' },
+    { value: 'Bus', label: 'Bus' },
+    { value: 'Other', label: 'Other' }
+  ];
+  isBookingModalOpen: boolean = false;
+  isEditMode: boolean = false;
+  isPaymentModalOpen: boolean = false;
+  currentBookingForPayment: any = null;
+  paymentForm!: FormGroup;
 
   constructor(
     private router: Router,
@@ -46,15 +76,16 @@ export class DashboardComponent implements OnInit {
     private adminService: AdminService,
     private parkingService: ParkingService,
     private bookingService: BookingService,
-    private fb: FormBuilder
+    private paymentService: PaymentService,
+    private fb: FormBuilder,
+    private toastr: ToastrService,
   ) { }
 
   ngOnInit(): void {
-    console.log('DashboardComponent initialized');
+    // console.log('DashboardComponent initialized');
     const role = this.authService.getRole();
-    console.log('User role:', role);
+    // console.log('User role:', role);
     this.userRole = role || '';
-
     if (role === 'Admin') {
       this.loadAdminData();
       this.loadParkingSlots();
@@ -63,10 +94,18 @@ export class DashboardComponent implements OnInit {
       this.createRoleForm();
       this.createParkingForm();
       this.createBookingForm();
+      this.createResetPasswordForm();
+      this.createChangePasswordForm();
     } else if (role === 'Manager') {
-      this.loadManagerData();
+      console.log('Manager dashboard loaded');
+      this.createBookingForm();
+      this.createChangePasswordForm();
+      this.loadBookings();
     } else if (role === 'Customer') {
-      this.loadCustomerData();
+      console.log('Customer dashboard loaded');
+      this.createBookingForm();
+      this.createChangePasswordForm();
+      this.loadBookings();
     }
   }
 
@@ -81,22 +120,31 @@ export class DashboardComponent implements OnInit {
         this.totalSlots = slots.length;
         this.totalBookings = bookings.length;
         this.allUsers = users;
-        console.log('Admin data loaded:', { users, slots, bookings });
+        // console.log('Admin data loaded:', { users, slots, bookings });
       });
-  }
-
-  loadManagerData(): void {
-    console.log('Loading Manager data...');
-    // Fetch and display Manager-specific data
-  }
-
-  loadCustomerData(): void {
-    console.log('Loading Customer data...');
-    // Fetch and display Customer-specific data
   }
 
   openParkingModal(): void {
     this.isParkingCreateModalOpen = true;
+    this.parkingForm.reset();
+    this.getManagers();
+  }
+
+  getManagers(): void {
+    this.dataLoaded = true;
+    this.adminService
+      .getManagers()
+      .pipe(finalize(() => this.dataLoaded = false))
+      .subscribe({
+        next: (res) => {
+          console.log('Managers fetched:', res);
+          this.managers = res;
+        },
+        error: (err) => {
+          console.error('Error fetching managers:', err);
+          this.toastr.error('Failed to load managers');
+        }
+      });
   }
 
   closeParkingModal(): void {
@@ -108,6 +156,8 @@ export class DashboardComponent implements OnInit {
       code: ['', [Validators.required]],
       location: ['', [Validators.required]],
       managerId: ['', [Validators.required]],
+      type: ['', [Validators.required]],
+      pricePerHour: ['', [Validators.required, Validators.min(0)]]
     });
   }
 
@@ -127,10 +177,14 @@ export class DashboardComponent implements OnInit {
 
   openUpdateModal(slot: any): void {
     this.isParkingUpdateModalOpen = true;
+    this.getManagers();
     this.currentParkingSlot = slot?._id;
     this.parkingForm.patchValue({
       code: slot.code,
       location: slot.location,
+      status: slot.status,
+      type: slot.type,
+      pricePerHour: slot.pricePerHour,
       managerId: slot.managerId._id,
     });
   }
@@ -139,7 +193,7 @@ export class DashboardComponent implements OnInit {
     this.isParkingUpdateModalOpen = false;
   }
 
-  upateParking(): void {
+  updateParking(): void {
     this.dataLoaded = true;
     if (this.currentParkingSlot) {
       const payload = { ...this.parkingForm.value };
@@ -198,7 +252,7 @@ export class DashboardComponent implements OnInit {
   }
 
   openEditUserModal(user: any) {
-    console.log('Editing user:', user);
+    // console.log('Editing user:', user);
     this.userEditModalOpen = true;
     this.userForm.patchValue({
       name: user.name,
@@ -265,11 +319,27 @@ export class DashboardComponent implements OnInit {
 
   openCreateBookingModal(): void {
     this.isBookingCreateModalOpen = true;
+    this.loadParkingSlotsForDropdown();
+  }
+
+  loadParkingSlotsForDropdown(): void {
+    this.parkingService.getParkingSlotsDetails().subscribe({
+      next: (res) => {
+        // console.log('Parking slots fetched:', res);
+        this.parkingSlots = res;
+        this.toastr.success('Parking slots loaded');
+      },
+      error: (err) => {
+        console.error('Error fetching parking slots:', err);
+        this.toastr.error('Failed to load parking slots');
+      }
+    });
   }
 
   closeCreateBookingModal(): void {
     this.isBookingCreateModalOpen = false;
   }
+
   openUpdateBookingModal(): void {
     this.isBookingUpdateModalOpen = true;
   }
@@ -289,14 +359,31 @@ export class DashboardComponent implements OnInit {
   saveBooking(): void {
     this.dataLoaded = true;
     if (this.bookingForm.valid) {
-      this.bookingForm.reset();
-      this.closeCreateBookingModal();
+      this.bookingService.createBooking(this.bookingForm.value)
+        .pipe(finalize(() => this.dataLoaded = false))
+        .subscribe(() => {
+          this.loadBookings();
+          this.bookingForm.reset();
+          this.closeCreateBookingModal();
+          this.closeBookingModal();
+          this.toastr.success('Booking created successfully');
+        });
     }
   }
 
-  openEditBookingModal(): void {
+  openEditBookingModal(booking: any): void {
+    console.log('Editing booking:', booking);
     this.isBookingUpdateModalOpen = true;
+
+    this.bookingForm.patchValue({
+      parkingId: booking.parkingId._id,
+      startTime: moment.parseZone(booking.startTime).format('YYYY-MM-DDTHH:mm'),
+      endTime: moment.parseZone(booking.endTime).format('YYYY-MM-DDTHH:mm')
+    });
+
+    this.currentUserId = booking._id;
   }
+
 
   updateBooking(): void {
     this.dataLoaded = true;
@@ -319,20 +406,185 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  formatDateTime(date: string | Date): string {
-    return new Date(date).toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+  formatDateTime(date: string): string {
+    return moment.parseZone(date).format('DD-MM-YYYY hh:mm A');
   }
 
   logout(): void {
     this.authService.logout();
     this.router.navigate(['/']);
     console.log('Logged out');
+  }
+
+  searchParking(): void {
+    const query = this.searchQuery.trim();
+
+    if (!query) {
+      // If empty, reload all slots
+      this.loadParkingSlots();
+      return;
+    }
+
+    this.parkingService.searchParking(query).subscribe(results => {
+      this.allParkingSlots = results;
+      console.log('Search results:', results);
+    });
+  }
+
+
+  clearSearch(): void {
+    this.searchQuery = '';
+    this.loadParkingSlots(); // reload all slots
+  }
+
+  openProfileSettings() {
+    this.isResetPasswordModalOpen = true;
+    const tokenData = sessionStorage.getItem('token');
+    console.log('token:', tokenData);
+    this.resetPasswordForm.patchValue({ token: tokenData });
+  }
+
+  closeProfileSettings() {
+    this.isResetPasswordModalOpen = false;
+  }
+
+  createResetPasswordForm() {
+    this.resetPasswordForm = this.fb.group({
+      token: [''],
+      password: ['', [Validators.required, Validators.minLength(6)]]
+    });
+  }
+
+  submitResetPassword(): void {
+    if (this.resetPasswordForm.valid) {
+      const token = sessionStorage.getItem('token'); // must exist
+      if (!token) {
+        this.toastr.error('Reset token not found!');
+        return;
+      }
+
+      const password = this.resetPasswordForm.value.password;
+
+      this.authService.resetPassword(token, password).subscribe({
+        next: () => {
+          this.toastr.success('Password reset successful');
+          this.isResetPasswordModalOpen = false;
+        },
+        error: (err) => {
+          console.error(err);
+          this.toastr.error('Failed to reset password');
+        }
+      });
+    }
+  }
+
+  openChangePasswordModal() {
+    this.isChangePasswordModalOpen = true;
+    this.changePasswordForm.reset();
+  }
+
+  closeChangePasswordModal() {
+    this.isChangePasswordModalOpen = false;
+  }
+
+
+  createChangePasswordForm() {
+    this.changePasswordForm = this.fb.group({
+      currentPassword: ['', [Validators.required, Validators.minLength(6)]],
+      newPassword: ['', [Validators.required, Validators.minLength(6)]]
+    });
+  }
+
+  submitChangePassword() {
+    if (this.changePasswordForm.valid) {
+      const { currentPassword, newPassword } = this.changePasswordForm.value;
+      this.authService.changePassword(currentPassword, newPassword).subscribe({
+        next: () => {
+          this.toastr.success('Password changed successfully');
+          this.closeChangePasswordModal();
+        },
+        error: (err) => {
+          console.error(err);
+          this.toastr.error(err?.error?.message || 'Failed to change password');
+        }
+      });
+    }
+  }
+
+  openBookingModal() {
+    this.isBookingModalOpen = true;
+    this.bookingForm.reset();
+    this.loadParkingSlotsForDropdown();
+  }
+
+  closeBookingModal() {
+    this.isBookingModalOpen = false;
+    this.bookingForm.reset();
+  }
+
+  openPaymentModal(booking: any): void {
+    this.currentBookingForPayment = booking;
+    this.isPaymentModalOpen = true;
+    this.createPaymentForm();
+    this.paymentForm.reset();
+  }
+
+  closePaymentModal(): void {
+    this.isPaymentModalOpen = false;
+    this.currentBookingForPayment = null;
+  }
+
+  createPaymentForm(): void {
+    this.paymentForm = this.fb.group({
+      cardNumber: ['', [Validators.required, Validators.pattern('^[0-9]{16}$')]],
+      expiry: ['', [Validators.required, Validators.pattern('^(0[1-9]|1[0-2])\/?([0-9]{2})$')]],
+      cvv: ['', [Validators.required, Validators.pattern('^[0-9]{3,4}$')]],
+      nameOnCard: ['', [Validators.required]]
+    });
+  }
+
+  submitPayment(): void {
+    if (this.paymentForm.invalid || !this.currentBookingForPayment) {
+      this.toastr.error('Please fill in all card details correctly.');
+      return;
+    }
+
+    const formValues = this.paymentForm.value;
+
+    const payload: PaymentRequest = {
+      bookingId: this.currentBookingForPayment._id,
+      cardNumber: formValues.cardNumber,
+      expiry: formValues.expiry,
+      cvv: formValues.cvv,
+      nameOnCard: formValues.nameOnCard
+    };
+
+    this.paymentService.processPayment(payload).subscribe({
+      next: (res: any) => {
+        this.toastr.success(res.message || 'Payment successful!');
+        this.closePaymentModal();
+        this.loadBookings(); // Reload bookings to reflect the 'paid' status
+        this.toastr.success(res.message);
+      },
+      error: (err: any) => {
+        console.error(err);
+        this.toastr.error(err?.error?.message || 'Payment failed. Please try again.');
+      }
+    });
+  }
+
+  updateBookingStatus(bookingId: string, newStatus: 'completed' | 'cancelled'): void {
+    // Assuming your bookingService has a method to update the status
+    this.bookingService.updateBookingStatus(bookingId, newStatus).subscribe({
+      next: () => {
+        this.toastr.success(`Booking status updated to ${newStatus}`);
+        this.loadBookings(); // Reload the list to show the change
+      },
+      error: (err) => {
+        this.toastr.error('Failed to update booking status');
+        console.error(err);
+      }
+    });
   }
 
   ngOnDestroy(): void {

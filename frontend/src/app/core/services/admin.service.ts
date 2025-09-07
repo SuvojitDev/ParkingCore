@@ -52,4 +52,8 @@ export class AdminService {
   getAllBookings(): Observable<Booking[]> {
     return this.http.get<Booking[]>(`${this.apiUrl}/bookings`);
   }
+  
+  getManagers(): Observable<User[]> {
+    return this.http.get<User[]>(`${this.apiUrl}/users/managers`);
+  }
 }

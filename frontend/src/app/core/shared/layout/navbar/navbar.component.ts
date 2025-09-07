@@ -1,21 +1,3 @@
-// import { Component, OnInit } from '@angular/core';
-
-// @Component({
-//   selector: 'app-navbar',
-//   templateUrl: './navbar.component.html',
-//   styleUrls: ['./navbar.component.css']
-// })
-// export class NavbarComponent implements OnInit {
-
-//   constructor() { }
-
-//   ngOnInit(): void {
-//     const token = sessionStorage.getItem('userName');
-//     console.log('NavbarComponent initialized. Token:', token);
-//   }
-// }
-
-// src/app/core/layout/navbar/navbar.component.ts
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';

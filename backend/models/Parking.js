@@ -21,9 +21,26 @@ const ParkingSchema = new mongoose.Schema(
       required: true
     },
     location: {
-      type: String,
+      type: String, // human-readable address
       required: true,
       trim: true
+    },
+    lat: {
+      type: Number,
+      required: true
+    },
+    lng: {
+      type: Number,
+      required: true
+    },
+    type: {
+      type: String,
+      enum: ["Car", "Bike", "EV", "Disabled"],
+      default: "Car"
+    },
+    pricePerHour: {
+      type: Number,
+      default: 0
     }
   },
   { timestamps: true, versionKey: false }

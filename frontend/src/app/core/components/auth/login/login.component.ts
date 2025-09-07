@@ -43,37 +43,42 @@ export class LoginComponent implements OnInit, OnDestroy {
       };
       console.log('Final Payload:', payload);
       this.authService.login(payload)
-      .pipe(finalize(() => this.isLoading = false))
-      .subscribe({
-        next: (response) => {
-          console.log('Login Response:', response);
-          this.authService.setSession(response?.token, response?.user?.role, response?.user?.name);
-          this.toastr.success('Login successful!');
-          // Redirect based on role
-          switch (response?.user?.role) {
-            case 'Admin':
-              this.router.navigate(['/admin/dashboard']);
-              break;
-            case 'Manager':
-              this.router.navigate(['/manager/dashboard']);
-              break;
-            case 'Customer':
-              this.router.navigate(['/customer/dashboard']);
-              break;
-            default:
-              this.router.navigate(['/']);
+        .pipe(finalize(() => this.isLoading = false))
+        .subscribe({
+          next: (response) => {
+            console.log('Login Response:', response);
+            this.authService.setSession(response?.token, response?.user?.role, response?.user?.name);
+            this.toastr.success('Login successful!');
+            // Redirect based on role
+            switch (response?.user?.role) {
+              case 'Admin':
+                this.router.navigate(['/admin/dashboard']);
+                break;
+              case 'Manager':
+                this.router.navigate(['/manager/dashboard']);
+                break;
+              case 'Customer':
+                this.router.navigate(['/customer/dashboard']);
+                break;
+              default:
+                this.router.navigate(['/']);
+            }
+          },
+          error: (error) => {
+            console.error('Login Error:', error);
+            this.toastr.error(error.error.message || 'Login failed, Please try again');
+            this.isLoading = false;
           }
-        },
-        error: (error) => {
-          console.error('Login Error:', error);
-          this.toastr.error(error.error.message || 'Login failed, Please try again');
-          this.isLoading = false;
-        }
-      });
+        });
     } else {
       this.toastr.error('Please fill all required fields');
     }
   }
+
+  goToForgotPassword(): void {
+    this.router.navigate(['/auth/forgot-password']);
+  }
+
 
   ngOnDestroy(): void {
     console.log('LoginComponent destroyed');

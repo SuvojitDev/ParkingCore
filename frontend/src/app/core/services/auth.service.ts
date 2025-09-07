@@ -1,60 +1,3 @@
-// import { Injectable } from '@angular/core';
-// import { HttpClient } from '@angular/common/http';
-// import { Observable } from 'rxjs';
-
-// interface registerData {
-//   name: string;
-//   email: string;
-//   password: string;
-// }
-// interface loginData {
-//   email: string;
-//   password: string;
-// }
-
-// @Injectable({
-//   providedIn: 'root'
-// })
-// export class AuthService {
-//   private baseUrl = 'http://localhost:5000/api/auth';
-
-//   constructor(
-//     private http: HttpClient
-//   ) { }
-
-//   // Login and Registration API's
-//   login(data: loginData): Observable<any> {
-//     return this.http.post(`${this.baseUrl}/login`, data);
-//   }
-
-//   register(data: registerData): Observable<any> {
-//     return this.http.post(`${this.baseUrl}/register`, data);
-//   }
-
-//   logout(): void {
-//     sessionStorage.removeItem('token');
-//     sessionStorage.removeItem('role');
-//   }
-
-//   setSession(token: string, role: string): void {
-//     sessionStorage.setItem('token', token);
-//     sessionStorage.setItem('role', role);
-//   }
-
-//   getToken(): string | null {
-//     return sessionStorage.getItem('token');
-//   }
-
-//   getRole(): string | null {
-//     return sessionStorage.getItem('role');
-//   }
-
-//   isLoggedIn(): boolean {
-//     return !!this.getToken();
-//   }
-// }
-
-// src/app/core/services/auth.service.ts
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable } from 'rxjs'; // Import BehaviorSubject
@@ -117,5 +60,20 @@ export class AuthService {
 
   getUserName(): string | null {
     return sessionStorage.getItem('userName');
+  }
+
+  forgotPassword(email: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/forgot-password`, { email });
+  }
+
+  resetPassword(token: string, password: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/reset-password/${token}`, { password });
+  }
+
+  changePassword(current: string, newPass: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/change-password`, {
+      currentPassword: current,
+      newPassword: newPass
+    });
   }
 }
